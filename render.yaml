@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: claude-connector
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    healthCheckPath: /health
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: MCP_API_KEY
+        sync: false
+      - key: PORT
+        value: "8000"

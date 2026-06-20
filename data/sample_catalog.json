@@ -1,0 +1,37 @@
+[
+  {
+    "sku": "HW-001",
+    "product_name": "Industrial Widget Pro",
+    "vertical": "Hardware",
+    "keywords": ["widget", "industrial", "manufacturing"],
+    "price_usd": 2499
+  },
+  {
+    "sku": "HW-002",
+    "product_name": "Compact Sensor Kit",
+    "vertical": "Hardware",
+    "keywords": ["sensor", "iot", "hardware"],
+    "price_usd": 899
+  },
+  {
+    "sku": "SW-101",
+    "product_name": "PayFlow API",
+    "vertical": "Fintech",
+    "keywords": ["payments", "fintech", "api"],
+    "price_usd": 12000
+  },
+  {
+    "sku": "SW-102",
+    "product_name": "LedgerSync",
+    "vertical": "Fintech",
+    "keywords": ["accounting", "fintech", "saas"],
+    "price_usd": 4500
+  },
+  {
+    "sku": "MR-201",
+    "product_name": "GrowthPilot",
+    "vertical": "Marketing",
+    "keywords": ["marketing", "seo", "growth"],
+    "price_usd": 3200
+  }
+]

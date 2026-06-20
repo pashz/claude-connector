@@ -1,0 +1,14 @@
+# Catalog configuration — swap this file (or point DATA_CONFIG) to use a different dataset.
+# Core server logic reads normalized records; only mapping + path change per client.
+
+catalog:
+  source_path: data/domains.json
+  record_type: domain
+
+  # Maps source JSON fields → normalized catalog shape used by search/recommend tools.
+  fields:
+    id: domain
+    category: category
+    tags: tags
+    include:
+      - tld

@@ -1,0 +1,14 @@
+# Example: swap to a differently-shaped JSON catalog without changing server code.
+# Run with: DATA_CONFIG=config.sample.yaml python server.py
+
+catalog:
+  source_path: data/sample_catalog.json
+  record_type: product
+
+  fields:
+    id: sku
+    category: vertical
+    tags: keywords
+    include:
+      - product_name
+      - price_usd
