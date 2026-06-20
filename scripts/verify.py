@@ -87,7 +87,11 @@ def test_recommendations() -> None:
                 and all(r.get("justification") for r in result["recommendations"])
             )
             domains = [r["domain"] for r in result.get("recommendations", [])]
-            check(f"recommend_domains({idea[:40]}...)", ok, str(domains) or result.get("message", ""))
+            detail = result.get("message", "") if result.get("error") else str(domains)
+            usage = result.get("usage", {})
+            if usage:
+                detail += f" | cache_read={usage.get('cache_read_input_tokens', 0)}"
+            check(f"recommend_domains({idea[:40]}...)", ok, detail)
     else:
         print("  SKIP  No ANTHROPIC_API_KEY — running mock parser test instead")
         from unittest.mock import MagicMock, patch

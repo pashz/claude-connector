@@ -11,8 +11,11 @@ import anthropic
 
 from catalog.loader import Catalog
 
-CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-20250514")
-MAX_TOKENS = 1024
+# Haiku 4.5: fast and cheap for structured JSON matching over a static portfolio.
+CLAUDE_MODEL = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
+MAX_TOKENS = 512
+# Portfolio text is static per catalog — cache it to cut repeat input cost ~80–90%.
+CACHE_TTL = os.environ.get("CLAUDE_CACHE_TTL", "1h")
 
 
 def _portfolio_lines(catalog: Catalog) -> str:
@@ -22,7 +25,7 @@ def _portfolio_lines(catalog: Catalog) -> str:
     )
 
 
-def _build_system_prompt(catalog: Catalog) -> str:
+def _instructions_text(catalog: Catalog) -> str:
     return f"""You are a domain portfolio advisor with access to {len(catalog.records)} curated domains.
 
 When given a business idea:
@@ -41,10 +44,22 @@ When given a business idea:
 Rules:
 - Only recommend domains that appear in the portfolio
 - Justifications must be one sentence each
-- If nothing is a close match, pick the closest options and say so in the justification
+- If nothing is a close match, pick the closest options and say so in the justification"""
 
-PORTFOLIO:
-{_portfolio_lines(catalog)}"""
+
+def _cached_system_blocks(catalog: Catalog) -> list[dict[str, Any]]:
+    """Split static portfolio into a cacheable block (instructions + portfolio list)."""
+    return [
+        {
+            "type": "text",
+            "text": _instructions_text(catalog),
+        },
+        {
+            "type": "text",
+            "text": f"PORTFOLIO:\n{_portfolio_lines(catalog)}",
+            "cache_control": {"type": "ephemeral", "ttl": CACHE_TTL},
+        },
+    ]
 
 
 def _parse_recommendation_json(text: str) -> dict[str, Any]:
@@ -54,6 +69,16 @@ def _parse_recommendation_json(text: str) -> dict[str, Any]:
         cleaned = fence_match.group(1).strip()
 
     return json.loads(cleaned)
+
+
+def _usage_summary(response: anthropic.types.Message) -> dict[str, int]:
+    usage = response.usage
+    return {
+        "input_tokens": getattr(usage, "input_tokens", 0) or 0,
+        "output_tokens": getattr(usage, "output_tokens", 0) or 0,
+        "cache_creation_input_tokens": getattr(usage, "cache_creation_input_tokens", 0) or 0,
+        "cache_read_input_tokens": getattr(usage, "cache_read_input_tokens", 0) or 0,
+    }
 
 
 def recommend_domains(catalog: Catalog, business_idea: str) -> dict[str, Any]:
@@ -78,7 +103,7 @@ def recommend_domains(catalog: Catalog, business_idea: str) -> dict[str, Any]:
         response = client.messages.create(
             model=CLAUDE_MODEL,
             max_tokens=MAX_TOKENS,
-            system=_build_system_prompt(catalog),
+            system=_cached_system_blocks(catalog),
             messages=[
                 {
                     "role": "user",
@@ -139,4 +164,5 @@ def recommend_domains(catalog: Catalog, business_idea: str) -> dict[str, Any]:
         "business_summary": parsed.get("business_summary", ""),
         "recommendations": validated[:3],
         "model": CLAUDE_MODEL,
+        "usage": _usage_summary(response),
     }

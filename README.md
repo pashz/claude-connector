@@ -16,6 +16,8 @@ Built as a reusable template — swap the data file and field mapping in `config
 
 **Transport:** Streamable HTTP at `/mcp` — not stdio. Designed for remote deployment the way a real client integration would connect.
 
+**Cost:** `recommend_domains` uses **Claude Haiku 4.5** with **prompt caching** on the static 412-domain portfolio block (1h TTL by default). Repeat calls read from cache at ~80–90% lower input cost than uncached.
+
 ## Quick start (local)
 
 **Requires Python 3.10+** (tested on 3.12).
