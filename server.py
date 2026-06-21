@@ -16,6 +16,7 @@ from fastmcp import FastMCP
 from starlette.requests import Request
 from starlette.responses import JSONResponse, PlainTextResponse
 
+from auth import build_http_middleware
 from catalog.loader import Catalog, CatalogError, load_catalog
 from catalog.recommender import recommend_domains as run_recommendation
 from catalog.search import get_record_details, search_records
@@ -41,8 +42,7 @@ mcp = FastMCP(
     ),
 )
 
-# Auth stub: set MCP_API_KEY in production and add client-side Authorization headers.
-# FastMCP auth middleware can be layered here when a client requires it.
+HTTP_MIDDLEWARE = build_http_middleware(MCP_API_KEY)
 
 
 @mcp.custom_route("/health", methods=["GET"])
@@ -120,5 +120,7 @@ async def recommend_domains(business_idea: str) -> dict[str, Any]:
 if __name__ == "__main__":
     print(f"Starting MCP server on {HOST}:{PORT} ({len(CATALOG.records)} records loaded)")
     if MCP_API_KEY:
-        print("MCP_API_KEY is set — clients should send Authorization: Bearer <key>")
-    mcp.run(transport="http", host=HOST, port=PORT)
+        print("MCP_API_KEY is set — /mcp requires Authorization: Bearer <key>")
+    else:
+        print("MCP_API_KEY is not set — /mcp is open (set MCP_API_KEY in production)")
+    mcp.run(transport="http", host=HOST, port=PORT, middleware=HTTP_MIDDLEWARE)

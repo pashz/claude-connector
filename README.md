@@ -72,9 +72,34 @@ npx @modelcontextprotocol/inspector
 
 Connect to `http://localhost:8000/mcp`, list tools, and call them interactively.
 
-### Optional API key
+### API key (production)
 
-Set `MCP_API_KEY` in `.env` to require `Authorization: Bearer <key>` on requests. Leave unset for open local development.
+When `MCP_API_KEY` is set, every request to `/mcp` **must** include:
+
+```
+Authorization: Bearer <your-mcp-api-key>
+```
+
+`/health` and `/` stay open for load balancers. Wrong or missing keys return **401** before any tool runs.
+
+Leave `MCP_API_KEY` unset for open local development.
+
+**Claude Desktop** with auth:
+
+```json
+{
+  "mcpServers": {
+    "domain-portfolio": {
+      "url": "https://your-app.onrender.com/mcp",
+      "headers": {
+        "Authorization": "Bearer your-mcp-api-key"
+      }
+    }
+  }
+}
+```
+
+**MCP Inspector:** add the same `Authorization` header in connection settings.
 
 ## Swapping the data source
 

@@ -112,6 +112,34 @@ def test_recommendations() -> None:
                 check("recommend_domains mock pipeline", ok, str(result.get("recommendations", [])))
 
 
+async def test_mcp_auth(base_url: str = "http://127.0.0.1:8000") -> None:
+    print("\n=== MCP auth enforcement (live server) ===")
+    api_key = os.environ.get("MCP_API_KEY", "")
+    if not api_key:
+        print("  SKIP  MCP_API_KEY not set — auth enforcement disabled")
+        return
+
+    try:
+        import httpx
+    except ImportError:
+        print("  SKIP  httpx not available")
+        return
+
+    headers = {"Accept": "application/json, text/event-stream"}
+    async with httpx.AsyncClient(base_url=base_url) as client:
+        no_auth = await client.post("/mcp", headers=headers)
+        check("Missing bearer returns 401", no_auth.status_code == 401, str(no_auth.status_code))
+
+        bad_auth = await client.post(
+            "/mcp",
+            headers={**headers, "Authorization": "Bearer wrong-key"},
+        )
+        check("Wrong bearer returns 401", bad_auth.status_code == 401, str(bad_auth.status_code))
+
+        health = await client.get("/health")
+        check("Health check stays open without auth", health.status_code == 200, str(health.status_code))
+
+
 async def test_mcp_client(base_url: str = "http://127.0.0.1:8000/mcp") -> None:
     print("\n=== MCP client (live server) ===")
     try:
@@ -120,8 +148,11 @@ async def test_mcp_client(base_url: str = "http://127.0.0.1:8000/mcp") -> None:
         print("  SKIP  fastmcp Client not available")
         return
 
+    api_key = os.environ.get("MCP_API_KEY") or None
+    client_auth = api_key if api_key else None
+
     try:
-        async with Client(base_url) as client:
+        async with Client(base_url, auth=client_auth) as client:
             tools = await client.list_tools()
             tool_names = {t.name for t in tools}
             check("MCP list_tools", {"search_domains", "get_domain_details", "recommend_domains"}.issubset(tool_names))
@@ -141,6 +172,7 @@ def main() -> None:
     print("Claude Connector — benchmark verification")
     test_catalog_logic()
     test_recommendations()
+    asyncio.run(test_mcp_auth())
     asyncio.run(test_mcp_client())
 
     print(f"\n=== Summary: {PASS} passed, {FAIL} failed ===")
